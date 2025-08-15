@@ -1,0 +1,9 @@
+type,digestExecSum,digestExecCountXactRowsSum
+Point_Get,3881672,3874547
+Show,6,334
+Projection,24,24
+TableDual,22,22
+MemTableScan,2,2
+Update,72306,0
+Delete,36153,0
+Insert,36153,0

@@ -1,0 +1,2 @@
+tablename,digestExecSum,avgActRows,digestExecSumXactRows
+sbtest5,60600,1000000.0,60600000000

@@ -1,0 +1,8 @@
+tablename,ViaPrimaryKeyAccessSum,ViaIndexAccessSum,ViaTableFullScanSum
+CLUSTER_STATEMENTS_SUMMARY_HISTORY,0,0,0
+RESOURCE_GROUPS,0,0,0
+sbtest4,682867,0,0
+sbtest5,682909,0,60600
+sbtest3,803923,0,0
+sbtest1,928051,0,0
+sbtest2,928537,0,0

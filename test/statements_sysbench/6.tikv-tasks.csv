@@ -1,0 +1,8 @@
+type,digestExecSum,digestExecCountXactRowsSum,digestExecCountXTotalProcessKeysSum,digestExecCountXTotalKeysSum,digestExecCountXCopTaskSum,digestExecCountXTikvTaskSum
+TableFullScan,60600,60600000000,,,,
+Selection,60600,245005800,,,,
+TableRangeScan,144615,14461500,,,,
+Projection,72308,7230800,7230800,7303108,,
+Point_Get,3881672,3874547,3773213,3773213,,
+HashAgg,96753,3675900,60603615300,60603712053,,
+StreamAgg,36154,36154,3615400,3651554,,
