@@ -1,85 +1,60 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	// Adjust import path as needed
+	lib "tidb_statements_pprof/lib"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/pprof/profile"
 )
 
-type Row struct {
-	SchemaName   string
-	TableNames   string
-	DigestText   string
-	Digest       string
-	SumLatency   float64
-	SumProcKeys  float64
-	SumCopTasks  float64
-	SumTiKVProcT float64
-}
-
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Println("Usage: go run main.go <mysql_dsn> <output.pb>")
+		fmt.Println("Usage: go run main.go <mysql_dsn|statements_csv> <output.pb>")
 		fmt.Println(`Example DSN: 'root:@tcp(127.0.0.1:4000)/'`)
 		return
 	}
 
-	dsn := os.Args[1]
+	dsn_or_csv := os.Args[1]
 	outputFile := os.Args[2]
-
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	query := `
-SELECT IFNULL(SCHEMA_NAME, "null") AS SCHEMA_NAME,
-       IFNULL(TABLE_NAMES, "null") AS TABLE_NAMES,
-       DIGEST_TEXT, DIGEST,
-       SUM_LATENCY/1e9 AS sum_latency_sec,
-       AVG_PROCESSED_KEYS * EXEC_COUNT AS sum_processed_keys,
-       SUM_COP_TASK_NUM AS sum_cop_tasks,
-       (AVG_PROCESS_TIME/1e9) * EXEC_COUNT AS sum_tikv_process_time_sec
-FROM information_schema.cluster_statements_summary;
-`
-	rows, err := db.Query(query)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
-
-	var data []Row
-	for rows.Next() {
-		var r Row
-		if err := rows.Scan(&r.SchemaName, &r.TableNames, &r.DigestText, &r.Digest,
-			&r.SumLatency, &r.SumProcKeys, &r.SumCopTasks, &r.SumTiKVProcT); err != nil {
-			panic(err)
-		}
-		data = append(data, r)
-	}
 
 	p := &profile.Profile{
 		SampleType: []*profile.ValueType{
 			{Type: "latency", Unit: "nanoseconds"},
 			{Type: "processed_keys", Unit: "count"},
 			{Type: "cop_tasks", Unit: "count"},
-			{Type: "tikv_process_time", Unit: "nanoseconds"},
+			{Type: "process_time", Unit: "nanoseconds"},
+			{Type: "resource_unit", Unit: "count"},
 		},
 		TimeNanos:     time.Now().UnixNano(),
 		DurationNanos: int64(time.Second),
 	}
 
+	data := []lib.Row{}
+	if strings.HasSuffix(dsn_or_csv, ".csv") {
+		// Read from CSV file
+		err := lib.GetDataFromCSV(dsn_or_csv, &data)
+		if err != nil {
+			panic(fmt.Errorf("failed to get data from CSV: %w", err))
+		}
+	} else {
+		// Read from MySQL
+		err := lib.GetDataFromMySQL(dsn_or_csv, &data)
+		if err != nil {
+			panic(fmt.Errorf("failed to get data from MySQL: %w", err))
+		}
+	}
+
+	// Process each row and create pprof profile samples
 	funcID := uint64(1)
 	locID := uint64(1)
 	funcMap := map[string]*profile.Function{}
 	locMap := map[string]*profile.Location{}
-
 	for _, r := range data {
 		action := ""
 		if parts := strings.Fields(r.DigestText); len(parts) > 0 {
@@ -127,10 +102,11 @@ FROM information_schema.cluster_statements_summary;
 		sample := &profile.Sample{
 			Location: locs,
 			Value: []int64{
-				int64(r.SumLatency * 1e9),   // seconds → nanoseconds
-				int64(r.SumProcKeys),        // count
-				int64(r.SumCopTasks),        // count
-				int64(r.SumTiKVProcT * 1e9), // seconds → nanoseconds
+				int64(r.SumLatency * 1e9),  // seconds → nanoseconds
+				int64(r.SumProcKeys),       // count
+				int64(r.SumCopTasks),       // count
+				int64(r.SumProcTime * 1e9), // seconds → nanoseconds
+				int64(r.SUMRU),             // resource unit
 			},
 		}
 		p.Sample = append(p.Sample, sample)
