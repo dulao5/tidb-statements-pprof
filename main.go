@@ -63,11 +63,14 @@ func main() {
 
 		// pprof 调用栈从下到上，故最上层放 digest，最下层放 schema
 		stack := []string{
-			"digest:" + r.Digest,
-			"action:" + action,
-			"table:" + r.TableNames,
 			"schema:" + r.SchemaName,
+			"table:" + r.TableNames,
 		}
+		for _, node := range r.Plan {
+			stack = append(stack, node.TaskType)
+		}
+		stack = append(stack, "action:"+action)
+		stack = append(stack, "digest:"+r.Digest)
 
 		var locs []*profile.Location
 		for _, fnName := range stack {
