@@ -10,4 +10,5 @@ type Row struct {
 	SumCopTasks float64
 	SumProcTime float64
 	SUMRU       float64 // Resource unit, if applicable
+	Plan        []PlanNode
 }

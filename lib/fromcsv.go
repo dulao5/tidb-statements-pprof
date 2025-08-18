@@ -50,6 +50,11 @@ func GetDataFromCSV(csvfile string, data *[]Row) error {
 
 		// Create a Row instance and append it to the data slice
 
+		plan, err := ParsePlan(rowHashMap["plan"])
+		if err != nil {
+			return err
+		}
+
 		r := Row{
 			SchemaName:  rowHashMap["schema_name"],
 			TableNames:  rowHashMap["table_names"],
@@ -60,6 +65,7 @@ func GetDataFromCSV(csvfile string, data *[]Row) error {
 			SumCopTasks: sumCopTasks,
 			SumProcTime: sumProcTime,
 			SUMRU:       sumRU,
+			Plan:        plan,
 		}
 		*data = append(*data, r)
 	}
