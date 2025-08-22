@@ -48,18 +48,26 @@ func GetDataFromCSV(csvfile string, data *[]Row) error {
 		sumProcTime := avgProcTime * float64(execCount)
 		sumRU, _ := strconv.ParseFloat(rowHashMap["sum_ru"], 64)
 
+		maxLatency, _ := strconv.ParseFloat(rowHashMap["max_latency"], 64)
+		maxLatency /= 1e6 // Convert nanoseconds to Milliseconds
+		avgLatency, _ := strconv.ParseFloat(rowHashMap["avg_latency"], 64)
+		avgLatency /= 1e6 // Convert nanoseconds to Milliseconds
+
 		// Create a Row instance and append it to the data slice
 
 		r := Row{
-			SchemaName:  rowHashMap["schema_name"],
-			TableNames:  rowHashMap["table_names"],
-			DigestText:  rowHashMap["digest_text"],
-			Digest:      rowHashMap["digest"],
-			SumLatency:  sumLatency,
-			SumProcKeys: sumProcKeys,
-			SumCopTasks: sumCopTasks,
-			SumProcTime: sumProcTime,
-			SUMRU:       sumRU,
+			SchemaName:   rowHashMap["schema_name"],
+			TableNames:   rowHashMap["table_names"],
+			DigestText:   rowHashMap["digest_text"],
+			Digest:       rowHashMap["digest"],
+			SumLatency:   sumLatency,
+			SumProcKeys:  sumProcKeys,
+			SumCopTasks:  sumCopTasks,
+			SumProcTime:  sumProcTime,
+			SUMRU:        sumRU,
+			ExecCount:    execCount,
+			MaxLatencyMs: maxLatency,
+			AvgLatencyMs: avgLatency,
 		}
 		*data = append(*data, r)
 	}

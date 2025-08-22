@@ -60,11 +60,14 @@ func main() {
 		if parts := strings.Fields(r.DigestText); len(parts) > 0 {
 			action = parts[0]
 		}
+		if action == "" {
+			continue // Skip rows without action
+		}
 
-		// pprof 调用栈从下到上，故最上层放 digest，最下层放 schema
+		// stack trace for pprof
 		stack := []string{
-			"digest:" + r.Digest,
-			"action:" + action,
+			"digest:" + r.Digest + fmt.Sprintf(" (avg:%fms)", r.AvgLatencyMs) + " " + r.SummarizeSQL(),
+			"action:" + r.TableNames + "." + action,
 			"table:" + r.TableNames,
 			"schema:" + r.SchemaName,
 		}
@@ -89,7 +92,7 @@ func main() {
 				loc = &profile.Location{
 					ID: locID,
 					Line: []profile.Line{
-						{Function: fn, Line: 1},
+						{Function: fn, Line: r.ExecCount}, // Using ExecCount as a placeholder for line number
 					},
 				}
 				locID++
@@ -102,11 +105,21 @@ func main() {
 		sample := &profile.Sample{
 			Location: locs,
 			Value: []int64{
-				int64(r.SumLatency * 1e9),  // seconds → nanoseconds
-				int64(r.SumProcKeys),       // count
-				int64(r.SumCopTasks),       // count
-				int64(r.SumProcTime * 1e9), // seconds → nanoseconds
-				int64(r.SUMRU),             // resource unit
+				int64(r.SumLatency * 1e9), // Convert seconds to nanoseconds
+				int64(r.SumProcKeys),
+				int64(r.SumCopTasks),
+				int64(r.SumProcTime * 1e9), // Convert seconds to nanoseconds
+				int64(r.SUMRU),
+			},
+			Label: map[string][]string{
+				"schema_name": {r.SchemaName},
+				"table_names": {r.TableNames},
+				"digest_text": {r.DigestText},
+			},
+			NumLabel: map[string][]int64{
+				"exec_count":     {r.ExecCount},
+				"max_latency_ms": {int64(r.MaxLatencyMs)},
+				"avg_latency_ms": {int64(r.AvgLatencyMs)},
 			},
 		}
 		p.Sample = append(p.Sample, sample)

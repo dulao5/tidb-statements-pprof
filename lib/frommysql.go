@@ -20,7 +20,10 @@ SELECT IFNULL(SCHEMA_NAME, "null") AS SCHEMA_NAME,
        AVG_PROCESSED_KEYS * EXEC_COUNT AS sum_processed_keys,
        SUM_COP_TASK_NUM AS sum_cop_tasks,
        (AVG_PROCESS_TIME/1e9) * EXEC_COUNT AS sum_tikv_process_time_sec,
-	   (AVG_REQUEST_UNIT_READ+ AVG_REQUEST_UNIT_WRITE) * EXEC_COUNT AS sum_ru
+       (AVG_REQUEST_UNIT_READ+ AVG_REQUEST_UNIT_WRITE) * EXEC_COUNT AS sum_ru,
+       EXEC_COUNT,
+       MAX_LATENCY/1e6 as max_latency_sec_ms,
+       AVG_LATENCY/1e6 as avg_latency_sec_ms
 FROM information_schema.cluster_statements_summary;
 `
 	rows, err := db.Query(query)
@@ -32,7 +35,8 @@ FROM information_schema.cluster_statements_summary;
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(&r.SchemaName, &r.TableNames, &r.DigestText, &r.Digest,
-			&r.SumLatency, &r.SumProcKeys, &r.SumCopTasks, &r.SumProcTime, &r.SUMRU); err != nil {
+			&r.SumLatency, &r.SumProcKeys, &r.SumCopTasks, &r.SumProcTime, &r.SUMRU,
+			&r.ExecCount, &r.MaxLatencyMs, &r.AvgLatencyMs); err != nil {
 			return err
 		}
 		*data = append(*data, r)
