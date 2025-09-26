@@ -24,7 +24,7 @@ go run main.go "root:@tcp(127.0.0.1:4000)/" <output_pprof_file>
 ```
 
 ### Analyze statements CSV file exported from TiDB Dashboard
-
+![Export statements CSV file from TiDB Dashboard](https://github.com/user-attachments/assets/f19e8708-007e-4964-8d08-6ee43268c6af)
 ```sh
 go run main.go test/statements_sysbench.csv <output_pprof_file>
 ```
